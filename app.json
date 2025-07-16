@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "List Do",
+    "slug": "my-expo-app",
+    "version": "3.0.0",
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "plugins": ["expo-font"],
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "versionCode": 5,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.vvoid.myexpoapp"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "9ebd9363-1dc9-487f-9ae4-55c7c5c75d72"
+      }
+    }
+  }
+}
