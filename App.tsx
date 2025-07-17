@@ -1,7 +1,7 @@
 import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 import { useColorScheme as useNativeWindScheme } from 'nativewind';
-
+import { Dialog, Portal, Button, PaperProvider } from 'react-native-paper';
 import './global.css';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -17,7 +17,7 @@ interface Task {
   check: boolean;
 }
 export default function App() {
-  const [isConfirmDeleteAll, setIsConfirmDeleteAll] = useState(false);
+  const [dialogVisible, setDialogVisible] = useState(false);
 
   // Fontes
   const [fontsLoaded] = useFonts({
@@ -70,25 +70,20 @@ export default function App() {
 
     setTasks([...tasks, declaredTask]);
     setNewTask('');
+
+    Toast.show({
+      type: 'success',
+      text1: 'Tarefa adicionada',
+      text2: 'Sua tarefa foi salva com sucesso.',
+      position: 'bottom',
+      visibilityTime: 2500,
+    });
   };
 
-  const handleDeleteAllTask = () => {
-    Alert.alert(
-      'Apagar todas as tarefas?',
-      'Essa ação não pode ser desfeita.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Apagar tudo',
-          style: 'destructive',
-          onPress: async () => {
-            setTasks([]);
-            await AsyncStorage.removeItem('tasks');
-          },
-        },
-      ],
-      { cancelable: true }
-    );
+  const handleConfirmDelete = async () => {
+    setTasks([]);
+    await AsyncStorage.removeItem('tasks');
+    setDialogVisible(false);
   };
 
   const handleDeleteTask = (id: string) => {
@@ -115,26 +110,32 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        className="flex-1 bg-slate-300 dark:bg-slate-600"
-        contentContainerStyle={{ padding: 20, paddingBottom: 0 }}>
-        <View className="flex-1 items-center gap-2 p-5 font-semibold">
-          {/* Pesquisa + Adição de Tarefas */}
-          <TaskInput
-            value={newTask}
-            onChangeText={setNewTask}
-            onSubmit={handleAddTask}
-            onDeleteAll={handleDeleteAllTask}
-            isConfirm={isConfirmDeleteAll}
-            setIsConfirm={setIsConfirmDeleteAll}
-          />
-
-          {/* Tarefas */}
-          <TaskList tasks={tasks} onToggleTask={handleToggleTask} onDeleteTask={handleDeleteTask} />
-        </View>
-      </ScrollView>
+      <PaperProvider>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          className="flex-1 bg-slate-300 dark:bg-slate-600"
+          contentContainerStyle={{ padding: 20, paddingBottom: 0 }}>
+          <View className="flex-1 items-center gap-2 p-5 font-semibold">
+            {/* Pesquisa + Adição de Tarefas */}
+            <TaskInput
+              value={newTask}
+              onChangeText={setNewTask}
+              onSubmit={handleAddTask}
+              dialogVisible={dialogVisible}
+              setDialogVisible={setDialogVisible}
+              onConfirmDelete={handleConfirmDelete}
+            />
+            {/* Tarefas */}
+            <TaskList
+              tasks={tasks}
+              onToggleTask={handleToggleTask}
+              onDeleteTask={handleDeleteTask}
+            />
+          </View>
+        </ScrollView>
+      </PaperProvider>
+      <Toast />
     </>
   );
 }

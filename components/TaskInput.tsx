@@ -1,22 +1,23 @@
 import { Shredder } from 'lucide-react-native';
-import { TextInput, TouchableOpacity, View, Text, Pressable } from 'react-native';
+import { TextInput, TouchableOpacity, View, Text } from 'react-native';
+import { Dialog, Portal, Button } from 'react-native-paper';
 
 interface TaskInputProps {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
-  isConfirm: boolean;
-  setIsConfirm: (arg: boolean) => void;
-  onDeleteAll: () => void;
+  dialogVisible: boolean;
+  setDialogVisible: (arg: boolean) => void;
+  onConfirmDelete: () => void;
 }
 
 export default function TaskInput({
   value,
   onChangeText,
   onSubmit,
-  isConfirm,
-  setIsConfirm,
-  onDeleteAll,
+  dialogVisible,
+  setDialogVisible,
+  onConfirmDelete,
 }: TaskInputProps) {
   return (
     <View className="px-5 pb-5">
@@ -39,14 +40,31 @@ export default function TaskInput({
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={onDeleteAll}
+          onPress={() => setDialogVisible(true)}
           className="ml-2 h-12 w-12 items-center justify-center rounded-full bg-red-500">
           <Shredder color="white" />
         </TouchableOpacity>
       </View>
+
       {value.length >= 20 && (
         <Text className="text-center text-sm text-red-500">Limite de caracteres atingido!</Text>
       )}
+
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+          <Dialog.Title>Apagar todas as tarefas?</Dialog.Title>
+          <Dialog.Content>
+            <Text>Essa ação não poderá ser desfeita.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogVisible(false)}>Cancelar</Button>
+            <Button onPress={onConfirmDelete} textColor="red">
+              Apagar
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
+                                                                                                                                                                                                                                                                
