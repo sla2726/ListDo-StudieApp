@@ -10,14 +10,18 @@ import TaskInput from './components/TaskInput';
 import TaskList from 'components/TaskList';
 import Toast from 'react-native-toast-message';
 import * as Notifications from 'expo-notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
+// Tipos
 interface Task {
   id: string;
   date: string;
   description: string;
   check: boolean;
 }
+
 export default function App() {
+  // Notificação
   Notifications.setNotificationHandler({
     // @ts-ignore
     handleNotification: async () => ({
@@ -26,6 +30,7 @@ export default function App() {
       shouldSetBadge: false,
     }),
   });
+
   useEffect(() => {
     const requestPermission = async () => {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -37,8 +42,6 @@ export default function App() {
     requestPermission();
   }, []);
 
-  const [dialogVisible, setDialogVisible] = useState(false);
-
   // Fontes
   const [fontsLoaded] = useFonts({
     OswaldRegular: require('./assets/fonts/Oswald-Regular.ttf'),
@@ -49,25 +52,23 @@ export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
 
-  // Salvamento
-  const saveTasks = async (tasks: Task[]) => {
-    await AsyncStorage.setItem('tasks', JSON.stringify(tasks));
-  };
-  const loadTasks = async () => {
-    const data = await AsyncStorage.getItem('tasks');
-    if (data) setTasks(JSON.parse(data));
-  };
+  // Visibilidade do diálogo de confirmação
+  const [dialogVisible, setDialogVisible] = useState(false);
 
   // Tema
-  const deviceTheme = useDeviceColorScheme(); // Tema do sistema
-  const { setColorScheme } = useNativeWindScheme(); // Preparação na mudança de tema no Nativewind
-
+  const deviceTheme = useDeviceColorScheme();
+  const { setColorScheme } = useNativeWindScheme();
   const [theme, setTheme] = useState<'light' | 'dark'>(deviceTheme || 'light');
 
   useEffect(() => {
     setColorScheme(theme);
   }, [theme]);
 
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  // Carregar e salvar tarefas
   useEffect(() => {
     loadTasks();
   }, []);
@@ -76,26 +77,19 @@ export default function App() {
     saveTasks(tasks);
   }, [tasks]);
 
-  if (!fontsLoaded) return null;
-
-  // Handlers
-  const handleNotificationSaved = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Lembrete',
-        body: 'Você tem uma tarefa importante!',
-        sound: 'default',
-      },
-      // @ts-ignore
-      trigger: {
-        seconds: 5,
-        repeats: false,
-      },
-    });
+  const saveTasks = async (tasks: Task[]) => {
+    await AsyncStorage.setItem('tasks', JSON.stringify(tasks));
   };
 
+  const loadTasks = async () => {
+    const data = await AsyncStorage.getItem('tasks');
+    if (data) setTasks(JSON.parse(data));
+  };
+
+  // Adicionar tarefa
   const handleAddTask = async () => {
     if (!newTask.trim()) return;
+
     const declaredTask: Task = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
       date: new Date().toLocaleString('pt-BR'),
@@ -117,27 +111,45 @@ export default function App() {
     await handleNotificationSaved();
   };
 
+  // Notificação
+  const handleNotificationSaved = async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Lembrete',
+        body: 'Você tem uma tarefa importante!',
+        sound: 'default',
+      },
+      // @ts-ignore
+      trigger: {
+        seconds: 5,
+        repeats: false,
+      },
+    });
+  };
+
+  // Apagar tudo
   const handleConfirmDelete = async () => {
     setTasks([]);
     await AsyncStorage.removeItem('tasks');
     setDialogVisible(false);
   };
 
+  // Apagar tarefa individual
   const handleDeleteTask = (id: string) => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
+  // Marcar tarefa como feita
   const handleToggleTask = (id: string) => {
     setTasks((prev) =>
       prev.map((task) => (task.id === id ? { ...task, check: !task.check } : task))
     );
   };
 
-  const handleToggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  // Espera fontes carregarem
+  if (!fontsLoaded) return null;
 
-  // TSX
+  // Interface
   return (
     <>
       <View className="flex h-20 w-full items-center justify-center bg-slate-800">
@@ -154,7 +166,6 @@ export default function App() {
           className="flex-1 bg-slate-300 dark:bg-slate-600"
           contentContainerStyle={{ padding: 20, paddingBottom: 0 }}>
           <View className="flex-1 items-center gap-2 p-5 font-semibold">
-            {/* Pesquisa + Adição de Tarefas */}
             <TaskInput
               value={newTask}
               onChangeText={setNewTask}
@@ -163,7 +174,6 @@ export default function App() {
               setDialogVisible={setDialogVisible}
               onConfirmDelete={handleConfirmDelete}
             />
-            {/* Tarefas */}
             <TaskList
               tasks={tasks}
               onToggleTask={handleToggleTask}
