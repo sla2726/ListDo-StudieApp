@@ -1,7 +1,7 @@
-import { ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, Platform } from 'react-native';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 import { useColorScheme as useNativeWindScheme } from 'nativewind';
-import { Dialog, Portal, Button, PaperProvider } from 'react-native-paper';
+import { PaperProvider } from 'react-native-paper';
 import './global.css';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,6 +9,7 @@ import { useFonts } from 'expo-font';
 import TaskInput from './components/TaskInput';
 import TaskList from 'components/TaskList';
 import Toast from 'react-native-toast-message';
+import * as Notifications from 'expo-notifications';
 
 interface Task {
   id: string;
@@ -17,6 +18,25 @@ interface Task {
   check: boolean;
 }
 export default function App() {
+  Notifications.setNotificationHandler({
+    // @ts-ignore
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+  useEffect(() => {
+    const requestPermission = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permissão para notificações negada!');
+      }
+    };
+
+    requestPermission();
+  }, []);
+
   const [dialogVisible, setDialogVisible] = useState(false);
 
   // Fontes
@@ -59,7 +79,22 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   // Handlers
-  const handleAddTask = () => {
+  const handleNotificationSaved = async () => {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Lembrete',
+        body: 'Você tem uma tarefa importante!',
+        sound: 'default',
+      },
+      // @ts-ignore
+      trigger: {
+        seconds: 5,
+        repeats: false,
+      },
+    });
+  };
+
+  const handleAddTask = async () => {
     if (!newTask.trim()) return;
     const declaredTask: Task = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
@@ -78,6 +113,8 @@ export default function App() {
       position: 'bottom',
       visibilityTime: 2500,
     });
+
+    await handleNotificationSaved();
   };
 
   const handleConfirmDelete = async () => {
