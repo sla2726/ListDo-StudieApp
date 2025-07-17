@@ -6,6 +6,7 @@ interface TaskInputProps {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit: () => void;
+  setOnDateVisible: (arg: boolean) => void;
   dialogVisible: boolean;
   setDialogVisible: (arg: boolean) => void;
   onConfirmDelete: () => void;
@@ -15,6 +16,7 @@ export default function TaskInput({
   value,
   onChangeText,
   onSubmit,
+  setOnDateVisible,
   dialogVisible,
   setDialogVisible,
   onConfirmDelete,
@@ -35,7 +37,7 @@ export default function TaskInput({
 
         <TouchableOpacity
           className="h-12 w-12 items-center justify-center rounded-full bg-blue-500"
-          onPress={onSubmit}>
+          onPress={() => setOnDateVisible(true)}>
           <Text className="text-2xl font-bold text-white">+</Text>
         </TouchableOpacity>
 

@@ -24,7 +24,7 @@ export default function App() {
   // Notificação
   Notifications.setNotificationHandler({
     // @ts-ignore
-    handleNotification: async () => ({
+    handleNotification: async (): Promise<Notifications.NotificationBehavior> => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
       shouldSetBadge: false,
@@ -86,6 +86,51 @@ export default function App() {
     if (data) setTasks(JSON.parse(data));
   };
 
+  // Data da Tarefa
+  const [date, setDate] = useState(new Date());
+  const [mode, setMode] = useState<'date' | 'time'>('date');
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    const currentDate = selectedDate || date;
+    if (event.type === 'set' && selectedDate) {
+      setDate(currentDate);
+
+      if (mode === 'date') {
+        setMode('time');
+        setShowPicker(true);
+      } else {
+        setShowPicker(false);
+        setMode('date');
+        handleAddTask();
+      }
+    }
+  };
+
+  // Notificação
+  const handleNotificationSaved = async () => {
+    console.log('Data atual:', new Date().toISOString());
+    console.log('Data escolhida:', date.toISOString());
+
+    if (date.getTime() <= Date.now()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Data inválida!',
+        text2: 'A data e hora precisam ser futuras!',
+      });
+      return;
+    }
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Lembrete',
+        body: 'Você tem uma tarefa importante!',
+        sound: 'default',
+      },
+      // @ts-ignore
+      trigger: date,
+    });
+  };
+
   // Adicionar tarefa
   const handleAddTask = async () => {
     if (!newTask.trim()) return;
@@ -109,22 +154,6 @@ export default function App() {
     });
 
     await handleNotificationSaved();
-  };
-
-  // Notificação
-  const handleNotificationSaved = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Lembrete',
-        body: 'Você tem uma tarefa importante!',
-        sound: 'default',
-      },
-      // @ts-ignore
-      trigger: {
-        seconds: 5,
-        repeats: false,
-      },
-    });
   };
 
   // Apagar tudo
@@ -158,7 +187,6 @@ export default function App() {
           <Text>Trocar de Tema</Text>
         </TouchableOpacity>
       </View>
-
       <PaperProvider>
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -170,6 +198,7 @@ export default function App() {
               value={newTask}
               onChangeText={setNewTask}
               onSubmit={handleAddTask}
+              setOnDateVisible={setShowPicker}
               dialogVisible={dialogVisible}
               setDialogVisible={setDialogVisible}
               onConfirmDelete={handleConfirmDelete}
@@ -183,6 +212,10 @@ export default function App() {
         </ScrollView>
       </PaperProvider>
       <Toast />
+      {showPicker && (
+        <DateTimePicker value={date} mode={mode} display="default" onChange={handleDateChange} />
+      )}
+      ;
     </>
   );
 }
