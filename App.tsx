@@ -11,6 +11,7 @@ import TaskList from 'components/TaskList';
 import Toast from 'react-native-toast-message';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Moon, Sun } from 'lucide-react-native';
 
 // Tipos
 interface Task {
@@ -18,6 +19,7 @@ interface Task {
   date: string;
   description: string;
   check: boolean;
+  notificationId: string;
 }
 
 export default function App() {
@@ -92,79 +94,86 @@ export default function App() {
   const [showPicker, setShowPicker] = useState(false);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
     if (event.type === 'set' && selectedDate) {
-      setDate(currentDate);
+      const currentDate = selectedDate;
 
       if (mode === 'date') {
+        setDate(currentDate);
         setMode('time');
         setShowPicker(true);
       } else {
         setShowPicker(false);
         setMode('date');
-        handleAddTask();
+
+        setDate(currentDate);
+        handleAddTask(currentDate);
       }
+    } else {
+      setShowPicker(false);
+      setMode('date');
     }
-  };
-
-  // Notificação
-  const handleNotificationSaved = async () => {
-    console.log('Data atual:', new Date().toISOString());
-    console.log('Data escolhida:', date.toISOString());
-
-    if (date.getTime() <= Date.now()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Data inválida!',
-        text2: 'A data e hora precisam ser futuras!',
-      });
-      return;
-    }
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'Lembrete',
-        body: 'Você tem uma tarefa importante!',
-        sound: 'default',
-      },
-      // @ts-ignore
-      trigger: date,
-    });
   };
 
   // Adicionar tarefa
-  const handleAddTask = async () => {
+  const handleAddTask = async (customDate?: Date) => {
     if (!newTask.trim()) return;
+
+    const taskDate = customDate ?? date;
+    const now = new Date();
+
+    if (taskDate.getTime() - now.getTime() <= 5000) {
+      Toast.show({
+        type: 'error',
+        text1: 'Data inválida!',
+        text2: 'A data e hora precisam ser pelo menos 5 segundos no futuro.',
+      });
+      return;
+    }
+
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Lembrete!',
+        body: newTask,
+        sound: 'default',
+      },
+      // @ts-ignore
+      trigger: taskDate,
+    });
 
     const declaredTask: Task = {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-      date: new Date().toLocaleString('pt-BR'),
+      date: date.toLocaleString('pt-BR'),
       description: newTask,
       check: false,
+      notificationId,
     };
 
-    setTasks([...tasks, declaredTask]);
+    setTasks((prev) => [...prev, declaredTask]);
     setNewTask('');
 
     Toast.show({
       type: 'success',
       text1: 'Tarefa adicionada',
       text2: 'Sua tarefa foi salva com sucesso.',
-      position: 'bottom',
+
       visibilityTime: 2500,
     });
-
-    await handleNotificationSaved();
   };
-
   // Apagar tudo
   const handleConfirmDelete = async () => {
     setTasks([]);
     await AsyncStorage.removeItem('tasks');
+    await Notifications.cancelAllScheduledNotificationsAsync();
     setDialogVisible(false);
   };
 
   // Apagar tarefa individual
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
+    const taskToDelete = tasks.find((task) => task.id === id);
+    if (taskToDelete?.notificationId) {
+      await Notifications.cancelScheduledNotificationAsync(taskToDelete.notificationId);
+    }
+
     setTasks((prev) => prev.filter((task) => task.id !== id));
   };
 
@@ -184,7 +193,7 @@ export default function App() {
       <View className="flex h-20 w-full items-center justify-center bg-slate-800">
         <Text className="text-2xl font-extrabold uppercase">Lista de Tarefas</Text>
         <TouchableOpacity onPress={handleToggleTheme} className="rounded-full">
-          <Text>Trocar de Tema</Text>
+          <Text>Tema {theme === 'light' ? <Moon /> : <Sun />}</Text>
         </TouchableOpacity>
       </View>
       <PaperProvider>
